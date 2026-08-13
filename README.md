@@ -1,5 +1,7 @@
 # dsh-tool-time
 
+[English](README.en.md)
+
 DSH 时间工具插件 —— 严格 ISO 解析、IANA 时区转换、UTC 日历运算、固定时长差。零依赖、零进程、纯函数。
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
