@@ -88,36 +88,46 @@ Semantic contract:
   - A diff exceeding the safe integer range throws `time: diff duration out of range`
 - **Default UTC**: when `timezone` is omitted, the result is independent of the runtime environment (`timezoneSource: "default-utc"`)
 
-## npm rc.1 Compatibility (Verified)
+## npm 0.1.0-rc.6 Compatibility (Verified)
 
-This plugin has been migrated to the npm rc.1 dependency line and fully verified end-to-end in an isolated consumer of `@deepseek-ai/dsh@0.0.1-rc.1`:
+This plugin has been migrated to the npm 0.1.0-rc.6 dependency line and fully verified end-to-end in an isolated consumer of `@deepseek-ai/dsh@0.1.0-rc.6` (npm private package):
 
-- **Types/runtime**: `@deepseek-ai/cordis@^4.0.1-rc.1` + `@deepseek-ai/dsh-tools@^0.0.1-rc.1` + `@deepseek-ai/dsh-invariants@^0.0.1-rc.1` (peer); no longer depends on the unscoped `cordis`
+- **Types/runtime**: peers are `@deepseek-ai/cordis: ^4.0.1` + `@deepseek-ai/dsh-tools: >=0.0.1-rc.1 <0.2.0` + `@deepseek-ai/dsh-invariants: >=0.0.1-rc.1 <0.2.0`; no longer depends on the unscoped `cordis`
 - **Standalone build**: `npm install` (devDependencies are self-contained: typescript/vitest/@types/node) → `npm run typecheck` → `npm test` → `npm run build` → `npm pack`
-- **Consumption verification**: tarball installed into an rc.1 consumer → `dsh --profile compat --dump-config` shows this plugin's row → tool registration and execution actually pass
-- **Launch method**: `npx -p @deepseek-ai/dsh@0.0.1-rc.1 dsh web` (lib production mode; do not `install -g` globally)
+- **Consumption verification**: tarball installed into a DSH 0.1.0-rc.6 (npm) consumer → `dsh --profile compat --dump-config` shows this plugin's row → tool registration and execution actually pass
+- **Launch method**: `npx -p @deepseek-ai/dsh@0.1.0-rc.6 dsh web` (lib production mode; do not `install -g` globally)
 
 ## Version Adaptation
 
-- **Adapted DSH snapshot**: `20260806T160212Z-279244acb0` (0806 migration: profile/bundle plugin system)
+- **Adapted DSH**: DSH 0.1.0-rc.6 (npm) (profile/bundle plugin system)
 - **bundle declaration**: `dsh.bundle` in `package.json` (patch points to `cordis.patch.yml`) + `exports` exports
-- **patch format**: `cordis.patch.yml` uses a `- insert:` list (the 0806 patch is id-targeted; bare `- id:` entries report `entry not found`)
+- **patch format**: `cordis.patch.yml` uses a `- insert:` list (the patch is id-targeted; bare `- id:` entries report `entry not found`)
 - **files**: the published tarball includes `lib/`, `src/`, `cordis.patch.yml`
 
 ## Installation
 
 ### Profile Bundle (Recommended)
 
-Install this plugin into a profile as a standalone bundle (0806+):
+Install this plugin into a profile as a standalone bundle (DSH 0.1.0-rc.6 (npm)). This repository lives under the [omdsh-dev](https://github.com/omdsh-dev) organization and is publicly accessible:
 
 ```sh
-# Interactive (web) profile
-dsh plugin --profile web add "C:/path/to/dsh-tool-time"
+# Interactive (web) profile —— install from the GitHub repository
+dsh plugin --profile web add github:omdsh-dev/dsh-tool-time
 # One-off task (headless) profile —— dsh run uses headless by default
-dsh plugin --profile headless add "C:/path/to/dsh-tool-time"
+dsh plugin --profile headless add github:omdsh-dev/dsh-tool-time
 ```
 
-The bundled `dsh.bundle.patch` (pointing to `cordis.patch.yml`) automatically adds the plugin to the profile's layer stack after installation; the plugin's `cordis.patch.yml` inserts the `tool-time` entry via `- insert:`. The plugin's missing peer dependencies (`cordis`, `@deepseek-ai/dsh-tools`) are provided by the profile's healed `profiles/node_modules` fallback installation.
+Or install from the tarball produced by `npm pack`:
+
+```sh
+npm pack     # produces dsh-tool-time-<version>.tgz
+# Interactive (web) profile
+dsh plugin --profile web add ./dsh-tool-time-<version>.tgz
+# One-off task (headless) profile
+dsh plugin --profile headless add ./dsh-tool-time-<version>.tgz
+```
+
+The bundled `dsh.bundle.patch` (pointing to `cordis.patch.yml`) automatically adds the plugin to the profile's layer stack after installation; the plugin's `cordis.patch.yml` inserts the `tool-time` entry via `- insert:`. The plugin's missing peer dependencies (`@deepseek-ai/cordis`, `@deepseek-ai/dsh-tools`) are provided by the profile's healed `profiles/node_modules` fallback installation.
 
 > ⚠️ web and headless are **different profiles**: installing into web does not automatically cover headless; `dsh run` uses the headless profile by default. Use forward slashes for Windows paths (`C:/...`).
 
@@ -133,9 +143,9 @@ dsh --profile web --dump-config | grep tool-time
 dsh run "使用 time 工具获取当前 UTC 时间"
 ```
 
-### Manual Installation and Legacy Compatibility
+### Manual Installation and Legacy Compatibility (legacy monorepo scenario)
 
-Only for old snapshots that do not support Profile Bundle, or for plugin development/debugging environments:
+The monorepo way is only for legacy scenarios: old snapshots that do not support Profile Bundle, or plugin development/debugging environments:
 
 1. Place into the monorepo: `cp -r time ~/.dsh/source/master/packages/tools/time` (development debugging)
 2. Add `"@deepseek-ai/dsh-tool-time": "workspace:^"` to `apps/cli/package.json`; add `{ "path": "./packages/tools/time" }` to the `tsconfig.host.json` references
@@ -150,11 +160,11 @@ Only for old snapshots that do not support Profile Bundle, or for plugin develop
 
 5. Verify: `dsh --profile <name> --dump-config | grep tool-time`
 
-> 0806 note: the patch is id-targeted — a bare `- id:` entry reports `entry "xxx" not found`; you must wrap it in a `- insert:` list.
+> Note: the patch is id-targeted (DSH 0.1.0-rc.6 (npm)) — a bare `- id:` entry reports `entry "xxx" not found`; you must wrap it in a `- insert:` list.
 
 ## Known Limitations
 
-1. Distribution chain: `@deepseek-ai/dsh-tools` is private and requires the monorepo workspace
+1. Distribution chain: peer dependencies (e.g. `@deepseek-ai/dsh-tools`) are npm private packages; standalone installation does not depend on the monorepo workspace (monorepo is legacy only)
 2. `add` is UTC calendar arithmetic, not local wall-clock semantics (local wall-clock requires v2)
 3. Natural-language dates ("next week") and calendar month/year diffs are not supported (v2)
 4. Timezone data comes from Node's built-in ICU: "cross-platform consistency" means "consistency under the same Node/ICU data"
